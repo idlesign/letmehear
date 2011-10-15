@@ -19,7 +19,7 @@ setup(
     install_requires=['setuptools'],
     zip_safe=False,
     classifiers=[
-    'Development Status :: 4 - Beta',
+        'Development Status :: 4 - Beta',
         'Environment :: Console',
         'Intended Audience :: End Users/Desktop',
         'License :: OSI Approved :: BSD License',

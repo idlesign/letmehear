@@ -30,8 +30,8 @@ Ubuntu users may install the following SoX packages: `sox`, `libsox-fmt-all`.
 Usage
 -----
 
-1. `import letmehear` — if you want to use it as module. *LetMe* class is at your service.
-2. `./letmehear.py -h` in command line — to get help on utility usage.
+1. `import letmehear` - if you want to use it as module. *LetMe* class is at your service.
+2. `./letmehear.py -h` in command line - to get help on utility usage.
 
 
 Dedication
