@@ -43,7 +43,9 @@ class LetMe(object):
     """
 
     # The name of a temporary source audio file, which is used to make parts from.
-    _source_filename = '_letmehear.tmp.wav'
+    # We used flac instead of wav both to save space and prevent errors that may occur
+    # in wav if file is too big.
+    _source_filename = '_letmehear.tmp.flac'
     # Part length in seconds.
     _part_length = 180
     # Some lengthy shell command won't be executed on dry run.
