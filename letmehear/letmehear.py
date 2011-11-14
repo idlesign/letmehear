@@ -101,7 +101,7 @@ class LetMe(object):
     def _create_target_path(self, path):
         """Creates a directory for target files."""
         if not os.path.exists(path) and not self._dry_run:
-            logging.debug('Creating target path: %s...' % path)
+            logging.debug('Creating target path: %s ...' % path)
             try:
                 os.makedirs(path)
             except OSError:
@@ -119,7 +119,7 @@ class LetMe(object):
         `recursive` - if True search is also performed within subdirectories.
 
         """
-        logging.info('Enumerating files under the source path (recursive=%s)...' % recursive)
+        logging.info('Enumerating files under the source path (recursive=%s) ...' % recursive)
         files = {}
         if not recursive:
             files[self.path_source] = [file for file in os.listdir(self.path_source) if os.path.isfile(os.path.join(self.path_source, file))]
@@ -137,7 +137,7 @@ class LetMe(object):
         """
         files_filtered = defaultdict(list)
         supported_formats = self.sox_get_supported_formats()
-        logging.info('Filtering audio files...')
+        logging.info('Filtering audio files ...')
         paths = files_dict.keys()
 
         for path in paths:
@@ -187,7 +187,7 @@ class LetMe(object):
         Returns 1000 on dry run.
 
         """
-        logging.info('Getting source file length...')
+        logging.info('Getting source file length ...')
         result = self._process_command('soxi -D "%s"' % audio_file, PIPE)
         if result[1][0] != '':
             return float(result[1][0].strip('\n'))
@@ -200,7 +200,7 @@ class LetMe(object):
         one (1) second from the previous.
 
         """
-        logging.info('Preparing for source file chopping...')
+        logging.info('Preparing for source file chopping ...')
 
         wav_length = self.sox_get_audio_length(source_filename)
         if wav_length <= part_length:
@@ -213,7 +213,7 @@ class LetMe(object):
         logging.info('Chopping information:\n      Source file length: %(source)s second(s)\n      Requested part length: %(part)s second(s)\n      Parts count: %(parts_cnt)s' %
              {'source': wav_length, 'part': part_length, 'parts_cnt': parts_count})
 
-        logging.info('Starting chopping...')
+        logging.info('Starting chopping ...')
         for index in range(0, parts_count):
             start_pos = index * part_length
             if start_pos > 0:
@@ -223,9 +223,10 @@ class LetMe(object):
             part_number = str(index + 1).rjust(parts_count_len, '0')
 
             target = part_number
-            command = 'sox "%(source)s" %(target)s.mp3 trim %(start_pos)s %(length)s' % {
+            logging.info('Writting %s.mp3 [%s/%s - %s%%] ...' % (target, int(part_number), parts_count, int(int(part_number) * 100 / parts_count)))
+            command = 'sox -V1 "%(source)s" %(target)s.mp3 trim %(start_pos)s %(length)s' % {
                 'source': source_filename, 'target': target, 'start_pos': start_pos, 'length': part_length}
-            self._process_command(command)
+            self._process_command(command, PIPE)
         logging.info('Chopped.\n')
 
     def process_source_file(self, path, files, source_filename):
