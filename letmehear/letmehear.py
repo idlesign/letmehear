@@ -50,6 +50,8 @@ class LetMe(object):
     _part_length = 180
     # Some lengthy shell command won't be executed on dry run.
     _dry_run = False
+    # Speed ratio.
+    _speed = None
 
     def __init__(self, source_path, dest_path=None, use_logging=logging.INFO):
         """Prepares letmehear to for audio processing.
@@ -152,6 +154,10 @@ class LetMe(object):
         """Used to set output file(s) length in seconds."""
         self._part_length = seconds
 
+    def set_speed(self, ratio):
+        """Used to set output file(s) speed. Expects ratio modifier, e.g. 1.3 """
+        self._speed = ratio
+
     def sox_get_supported_formats(self):
         """Asks SoX for supported audio files formats and returns them as a list."""
         formats = ['wav']
@@ -173,12 +179,16 @@ class LetMe(object):
         logging.info('Making source file: %s' % target)
 
         options = ''
+        effects = ''
 
         if len(files) > 1:
             options = '--combine concatenate'
 
-        command = 'sox -S --ignore-length %(options)s "%(files)s" "%(target)s"' % {
-            'options': options, 'files': '" "'.join(files), 'target': target}
+        if self._speed is not None:
+            effects = 'speed %s' % self._speed
+
+        command = 'sox -S --ignore-length %(options)s "%(files)s" "%(target)s" %(effects)s' % {
+            'options': options, 'files': '" "'.join(files), 'target': target, 'effects': effects}
 
         self._process_command(command)
 
@@ -280,6 +290,7 @@ if __name__ == '__main__':
     argparser.add_argument('-r', help='Length (in seconds) for each output audio file.', action='store_true')
     argparser.add_argument('-d', help='Absolute or relative (to the current) destination path for output audio file(s).')
     argparser.add_argument('-l', help='Length (in seconds) for each output audio file.', type=int)
+    argparser.add_argument('-s', help='Speed ratio.', type=float)
     argparser.add_argument('-dry', help='Perform the dry run with no changes done to filesystem.')
     argparser.add_argument('-debug', help='Show debug messages while processing.', action='store_true')
 
@@ -297,6 +308,9 @@ if __name__ == '__main__':
 
         if parsed.l is not None:
             letme.set_part_length(parsed.l)
+
+        if parsed.s is not None:
+            letme.set_speed(parsed.s)
 
         if parsed.dry is not None:
             letme.set_dry_run()
