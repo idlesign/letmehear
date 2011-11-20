@@ -17,6 +17,7 @@ Features
 - Large variety of supported input audio formats (due to SoX).
 - Batch audio files processing (including recursive path traversing).
 - Adjustable output audio parts length.
+- Adjustable output audio speed.
 
 
 Requirements
@@ -32,6 +33,12 @@ Usage
 
 1. `import letmehear` - if you want to use it as module. *LetMe* class is at your service.
 2. `./letmehear.py -h` in command line - to get help on utility usage.
+
+In the following example we merge all audio files into one, increase its playback speed
+to 1.2, and resplit it into chunks of 3 minutes, putting them into `letmehear` directory
+created inside `/home/idlesign/audiobook_1/`::
+
+    ./letmehear.py -s 1.2 /home/idlesign/audiobook_1/
 
 
 Dedication
