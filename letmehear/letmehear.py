@@ -15,6 +15,7 @@ import argparse
 
 from collections import defaultdict
 from subprocess import Popen, PIPE
+from hashlib import md5
 
 # Regexp to fetch audio formats list from `sox -h` output.
 RE_SOX_AUDIO_SUPPORT = re.compile(r'AUDIO FILE FORMATS:(.*)\n', re.MULTILINE & re.IGNORECASE)
@@ -170,6 +171,42 @@ class LetMe(object):
         logging.debug('Sox supported audio formats: %s' % formats)
         return formats
 
+    def sox_get_sample_rates(self, files):
+        """Calculates maximum and minimum sample rates for given files.
+        Returns tuple (min_rate, max_rate, files_to_rates_dict).
+
+        """
+        min_rate = max_rate = None
+        files_to_rates_dict = {}
+
+        for file in files:
+            result = self._process_command('soxi -r "%s"' % file, PIPE)
+            rate = int(result[1][0].strip('\n'))
+            files_to_rates_dict[file] = rate
+
+            logging.debug('\nSample rate `%s` for `%s`' % (rate, file))
+
+            if max_rate is None or rate > max_rate:
+                max_rate = rate
+
+            if min_rate is None or rate < min_rate:
+                min_rate = rate
+
+        logging.debug('Sample rates: min - %s, max - %s' % (min_rate, max_rate))
+        return min_rate, max_rate, files_to_rates_dict
+
+    def get_resampled_filename(self, filepath):
+        """Returns temporary resampled file name from filepath."""
+        return 'tmp_%s.flac' % md5(filepath).hexdigest()
+
+    def sox_resample(self, file, target_rate, target_dir):
+        target_file = os.path.join(target_dir, self.get_resampled_filename(file))
+        logging.info('MUST resample "%s" to create source file. Resampling to %s ...\n      Target: %s' %
+                     (file, target_rate, target_file))
+        command = 'sox -S "%(input)s" -r %(rate)s "%(target)s"' % {'input': file, 'rate': target_rate,
+                                                                 'target': target_file}
+        self._process_command(command)
+
     def sox_create_source_file(self, files, target):
         """Creates a source file at given target path from one
         more input files.
@@ -181,14 +218,22 @@ class LetMe(object):
         options = ''
         effects = ''
 
+        files_to_precess = []
         if len(files) > 1:
             options = '--combine concatenate'
+
+        target_dir = os.path.dirname(target)
+        for file in files:
+            resampled_file = os.path.join(target_dir, self.get_resampled_filename(file))
+            if os.path.exists(resampled_file):
+                file = resampled_file
+            files_to_precess.append(file)
 
         if self._speed is not None:
             effects = 'speed %s' % self._speed
 
         command = 'sox -S --ignore-length %(options)s "%(files)s" "%(target)s" %(effects)s' % {
-            'options': options, 'files': '" "'.join(files), 'target': target, 'effects': effects}
+            'options': options, 'files': '" "'.join(files_to_precess), 'target': target, 'effects': effects}
 
         self._process_command(command)
 
@@ -239,14 +284,31 @@ class LetMe(object):
             self._process_command(command, PIPE)
         logging.info('Chopped.\n')
 
+    def remove_tmp_sources(self, source_filename):
+        """Removes temporary created source files."""
+        logging.info('Removing temporary files ...')
+        source_dir = os.path.dirname(source_filename)
+        if os.path.exists(source_filename):
+            os.remove(source_filename)
+        for file in os.listdir(source_dir):
+            if file.startswith('tmp_'):
+                os.remove(os.path.join(source_dir, file))
+
     def process_source_file(self, path, files, source_filename):
         """Initiates source file processing."""
         os.chdir(path)
+
+        min_rate, max_rate, files_to_rates_dict = self.sox_get_sample_rates(files)
+        if min_rate != max_rate:
+            for file in files:
+                if files_to_rates_dict[file] != max_rate:
+                    self.sox_resample(file, max_rate, os.path.dirname(source_filename))
+
         self.sox_create_source_file(files, source_filename)
         os.chdir(os.path.dirname(source_filename))
         self.sox_chop_source_audio(source_filename, self._part_length)
-        if os.path.exists(source_filename):
-            os.remove(source_filename)
+        self.remove_tmp_sources(source_filename)
+
 
     def hear(self, recursive=False):
         """God method that lets, as a consequence, you hear your precious
