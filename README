@@ -18,6 +18,7 @@ Features
 - Batch audio files processing (including recursive path traversing).
 - Adjustable output audio parts length.
 - Adjustable output audio speed.
+- Adjustable backshift length (number of seconds from the end of a previous audio part to place at the beginning of a next one).
 
 
 Requirements
