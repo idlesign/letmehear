@@ -290,10 +290,13 @@ class LetMe(object):
                 start_pos -= (index * backshift)
             part_number = str(index + 1).rjust(parts_count_len, '0')
 
+            # This will strip ID3Tags from file - they are identical thus uninformative.
+            comment = '--comment ""'
+
             target = part_number
             logging.info('Writting %s.mp3 [%s/%s - %s%%] ...' % (target, int(part_number), parts_count, int(int(part_number) * 100 / parts_count)))
-            command = 'sox -V1 "%(source)s" %(target)s.mp3 trim %(start_pos)s %(length)s' % {
-                'source': source_filename, 'target': target, 'start_pos': start_pos, 'length': part_length}
+            command = 'sox -V1 "%(source)s" %(comment)s %(target)s.mp3 trim %(start_pos)s %(length)s' % {
+                'source': source_filename, 'target': target, 'start_pos': start_pos, 'length': part_length, 'comment': comment}
             self._process_command(command, PIPE)
         logging.info('Chopped.\n')
 
