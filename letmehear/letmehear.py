@@ -49,6 +49,8 @@ class LetMe(object):
     _source_filename = '_letmehear.tmp.flac'
     # Part length in seconds.
     _part_length = 180
+    # Backshift in seconds.
+    _backshift = 1
     # Some lengthy shell command won't be executed on dry run.
     _dry_run = False
     # Speed ratio.
@@ -155,6 +157,13 @@ class LetMe(object):
         """Used to set output file(s) length in seconds."""
         self._part_length = seconds
 
+    def set_backshift(self, seconds):
+        """Used to set a backshift - number of seconds for every
+        part to be taken from a previous one.
+
+        """
+        self._backshift = seconds
+
     def set_speed(self, ratio):
         """Used to set output file(s) speed. Expects ratio modifier, e.g. 1.3 """
         self._speed = ratio
@@ -249,7 +258,7 @@ class LetMe(object):
         else:
             return 1000
 
-    def sox_chop_source_audio(self, source_filename, part_length):
+    def sox_chop_source_audio(self, source_filename, part_length, backshift=0):
         """Using SoX chops source audio file into parts of given length.
         Chopping is done in such a way that every next audio part contains
         one (1) second from the previous.
@@ -262,19 +271,23 @@ class LetMe(object):
             parts_count = 1
         else:
             # Calculate audio length with one second back shift. Also known as possum formula %)
-            parts_count = int(round(wav_length / float(part_length - 1), 0))
+            parts_count = int(round(wav_length / float(part_length - backshift), 0))
         parts_count_len = len(str(parts_count))
 
-        logging.info('Chopping information:\n      Source file length: %(source)s second(s)\n      Requested part length: %(part)s second(s)\n      Parts count: %(parts_cnt)s' %
-             {'source': wav_length, 'part': part_length, 'parts_cnt': parts_count})
+        logging.info('Chopping information:\n' \
+                     '      Source file length: %(source)s second(s)\n' \
+                     '      Requested part length: %(part)s second(s)\n' \
+                     '      Backshift: %(back)s second(s)\n' \
+                     '      Parts count: %(parts_cnt)s' %
+             {'source': wav_length, 'part': part_length, 'parts_cnt': parts_count, 'back': backshift})
 
         logging.info('Starting chopping ...')
         for index in range(0, parts_count):
             start_pos = index * part_length
             if start_pos > 0:
-                # We need to shift all but the first part for one second backward
+                # We need to shift all but the first part for `backshift` seconds backward
                 # to not to loose some phrases on chopping.
-                start_pos -= index
+                start_pos -= (index * backshift)
             part_number = str(index + 1).rjust(parts_count_len, '0')
 
             target = part_number
@@ -306,7 +319,7 @@ class LetMe(object):
 
         self.sox_create_source_file(files, source_filename)
         os.chdir(os.path.dirname(source_filename))
-        self.sox_chop_source_audio(source_filename, self._part_length)
+        self.sox_chop_source_audio(source_filename, self._part_length, self._backshift)
         self.remove_tmp_sources(source_filename)
 
 
@@ -352,6 +365,7 @@ if __name__ == '__main__':
     argparser.add_argument('-r', help='Length (in seconds) for each output audio file.', action='store_true')
     argparser.add_argument('-d', help='Absolute or relative (to the current) destination path for output audio file(s).')
     argparser.add_argument('-l', help='Length (in seconds) for each output audio file.', type=int)
+    argparser.add_argument('-b', help='Backshift - number of seconds for every part to be taken from a previous one.', type=int)
     argparser.add_argument('-s', help='Speed ratio.', type=float)
     argparser.add_argument('-dry', help='Perform the dry run with no changes done to filesystem.')
     argparser.add_argument('-debug', help='Show debug messages while processing.', action='store_true')
@@ -370,6 +384,9 @@ if __name__ == '__main__':
 
         if parsed.l is not None:
             letme.set_part_length(parsed.l)
+
+        if parsed.b is not None:
+            letme.set_backshift(parsed.b)
 
         if parsed.s is not None:
             letme.set_speed(parsed.s)
