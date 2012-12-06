@@ -168,6 +168,11 @@ class LetMe(object):
         """Used to set output file(s) speed. Expects ratio modifier, e.g. 1.3 """
         self._speed = ratio
 
+    def sox_check_is_available(self):
+        """Checks whether SoX is available."""
+        result = self._process_command('sox -h', PIPE, supress_dry_run=True)
+        return result[0]==0
+
     def sox_get_supported_formats(self):
         """Asks SoX for supported audio files formats and returns them as a list."""
         formats = ['wav']
@@ -365,7 +370,7 @@ if __name__ == '__main__':
     argparser = argparse.ArgumentParser('letmehear.py')
 
     argparser.add_argument('source_path', help='Absolute or relative (to the current) source path of input audio file(s).')
-    argparser.add_argument('-r', help='Length (in seconds) for each output audio file.', action='store_true')
+    argparser.add_argument('-r', help='Recursion flag to search directories under the source_path.', action='store_true')
     argparser.add_argument('-d', help='Absolute or relative (to the current) destination path for output audio file(s).')
     argparser.add_argument('-l', help='Length (in seconds) for each output audio file.', type=int)
     argparser.add_argument('-b', help='Backshift - number of seconds for every part to be taken from a previous one.', type=int)
@@ -385,6 +390,9 @@ if __name__ == '__main__':
     try:
         letme = LetMe(**kwargs)
 
+        if not letme.sox_check_is_available():
+            raise LetMeError('SoX seems not available. Please install it (e.g. `sudo apt-get install sox libsox-fmt-all`).')
+
         if parsed.l is not None:
             letme.set_part_length(parsed.l)
 
@@ -399,4 +407,4 @@ if __name__ == '__main__':
 
         letme.hear(parsed.r)
     except LetMeError as e:
-        print 'ERROR: %s' % e.message
+        print ('ERROR: %s' % e.message)
