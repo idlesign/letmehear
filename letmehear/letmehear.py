@@ -375,7 +375,7 @@ if __name__ == '__main__':
     argparser.add_argument('-l', help='Length (in seconds) for each output audio file.', type=int)
     argparser.add_argument('-b', help='Backshift - number of seconds for every part to be taken from a previous one.', type=int)
     argparser.add_argument('-s', help='Speed ratio.', type=float)
-    argparser.add_argument('-dry', help='Perform the dry run with no changes done to filesystem.')
+    argparser.add_argument('-dry', help='Perform the dry run with no changes done to filesystem.', action='store_true')
     argparser.add_argument('-debug', help='Show debug messages while processing.', action='store_true')
 
     parsed = argparser.parse_args()
@@ -402,9 +402,9 @@ if __name__ == '__main__':
         if parsed.s is not None:
             letme.set_speed(parsed.s)
 
-        if parsed.dry is not None:
+        if parsed.dry:
             letme.set_dry_run()
 
         letme.hear(parsed.r)
     except LetMeError as e:
-        print ('ERROR: %s' % e.message)
+        print('ERROR: %s' % e.message)
