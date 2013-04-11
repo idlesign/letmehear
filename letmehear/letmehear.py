@@ -149,7 +149,7 @@ class LetMe(object):
             if not path.endswith('letmehear'):
                 files = sorted(files_dict[path])
                 for file in files:
-                    if os.path.splitext(file)[1].lstrip('.') in supported_formats:
+                    if os.path.splitext(file)[1].lstrip('.').lower() in supported_formats:
                         files_filtered[path].append(file)
         return files_filtered
 
