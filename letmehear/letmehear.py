@@ -195,7 +195,11 @@ class LetMe(object):
 
         for file in files:
             result = self._process_command('soxi -r "%s"' % file, PIPE)
-            rate = int(result[1][0].strip('\n'))
+            try:
+                rate = int(result[1][0].strip('\n'))
+            except ValueError as e:
+                raise LetMeError('Unable to read sample rate from %s' % file)
+
             files_to_rates_dict[file] = rate
 
             logging.debug('\nSample rate `%s` for `%s`' % (rate, file))
