@@ -2,6 +2,8 @@ letmehear
 =========
 http://github.com/idlesign/letmehear
 
+.. image:: https://pypip.in/d/letmehear/badge.png
+        :target: https://crate.io/packages/letmehear
 
 What's that
 -----------
