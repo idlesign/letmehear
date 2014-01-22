@@ -18,12 +18,11 @@ from subprocess import Popen, PIPE
 from hashlib import md5
 
 # Regexp to fetch audio formats list from `sox -h` output.
-RE_SOX_AUDIO_SUPPORT = re.compile(r'AUDIO FILE FORMATS:(.*)\n', re.MULTILINE & re.IGNORECASE)
+RE_SOX_AUDIO_SUPPORT = re.compile('AUDIO FILE FORMATS:(.*)\n', re.MULTILINE & re.IGNORECASE)
 
 
 class LetMeError(Exception):
     """Exception type raised by letmehear."""
-    pass
 
 
 class LetMe(object):
@@ -95,11 +94,14 @@ class LetMe(object):
         logging.debug('Executing shell command: %s' % command)
         if (self._dry_run and supress_dry_run) or not self._dry_run:
             prc = Popen(command, shell=True, stdout=stdout)
-            std = prc.communicate()
+            std = list(prc.communicate())
+            if std[0] is not None:
+                std[0] = std[0].decode('utf-8')
             return prc.returncode, std
         return 0, ('', '')
 
-    def _configure_logging(self, verbosity_lvl=logging.INFO):
+    @staticmethod
+    def _configure_logging(verbosity_lvl=logging.INFO):
         """Switches on logging at given level."""
         logging.basicConfig(level=verbosity_lvl, format='%(levelname)s: %(message)s')
 
@@ -143,7 +145,7 @@ class LetMe(object):
         files_filtered = defaultdict(list)
         supported_formats = self.sox_get_supported_formats()
         logging.info('Filtering audio files ...')
-        paths = files_dict.keys()
+        paths = list(files_dict.keys())
 
         for path in paths:
             if not path.endswith('letmehear'):
@@ -171,7 +173,7 @@ class LetMe(object):
     def sox_check_is_available(self):
         """Checks whether SoX is available."""
         result = self._process_command('sox -h', PIPE, supress_dry_run=True)
-        return result[0]==0
+        return result[0] == 0
 
     def sox_get_supported_formats(self):
         """Asks SoX for supported audio files formats and returns them as a list."""
@@ -197,7 +199,7 @@ class LetMe(object):
             result = self._process_command('soxi -r "%s"' % file, PIPE)
             try:
                 rate = int(result[1][0].strip('\n'))
-            except ValueError as e:
+            except ValueError:
                 raise LetMeError('Unable to read sample rate from %s' % file)
 
             files_to_rates_dict[file] = rate
@@ -213,16 +215,20 @@ class LetMe(object):
         logging.debug('Sample rates: min - %s, max - %s' % (min_rate, max_rate))
         return min_rate, max_rate, files_to_rates_dict
 
-    def get_resampled_filename(self, filepath):
+    @staticmethod
+    def get_resampled_filename(filepath):
         """Returns temporary resampled file name from filepath."""
+        try:
+            filepath = filepath.encode('utf-8')
+        except UnicodeDecodeError:
+            pass
         return 'tmp_%s.flac' % md5(filepath).hexdigest()
 
     def sox_resample(self, file, target_rate, target_dir):
         target_file = os.path.join(target_dir, self.get_resampled_filename(file))
         logging.info('MUST resample "%s" to create source file. Resampling to %s ...\n      Target: %s' %
                      (file, target_rate, target_file))
-        command = 'sox -S "%(input)s" -r %(rate)s "%(target)s"' % {'input': file, 'rate': target_rate,
-                                                                 'target': target_file}
+        command = 'sox -S "%(input)s" -r %(rate)s "%(target)s"' % {'input': file, 'rate': target_rate, 'target': target_file}
         self._process_command(command)
 
     def sox_create_source_file(self, files, target):
@@ -309,7 +315,8 @@ class LetMe(object):
             self._process_command(command, PIPE)
         logging.info('Chopped.\n')
 
-    def remove_tmp_sources(self, source_filename):
+    @staticmethod
+    def remove_tmp_sources(source_filename):
         """Removes temporary created source files."""
         logging.info('Removing temporary files ...')
         source_dir = os.path.dirname(source_filename)
@@ -333,7 +340,6 @@ class LetMe(object):
         os.chdir(os.path.dirname(source_filename))
         self.sox_chop_source_audio(source_filename, self._part_length, self._backshift)
         self.remove_tmp_sources(source_filename)
-
 
     def hear(self, recursive=False):
         """God method that lets, as a consequence, you hear your precious
@@ -369,7 +375,7 @@ class LetMe(object):
         logging.info('We are done now. Thank you.\n')
 
 
-if __name__ == '__main__':
+def main():
 
     argparser = argparse.ArgumentParser('letmehear.py')
 
@@ -379,8 +385,8 @@ if __name__ == '__main__':
     argparser.add_argument('-l', help='Length (in seconds) for each output audio file.', type=int)
     argparser.add_argument('-b', help='Backshift - number of seconds for every part to be taken from a previous one.', type=int)
     argparser.add_argument('-s', help='Speed ratio.', type=float)
-    argparser.add_argument('-dry', help='Perform the dry run with no changes done to filesystem.', action='store_true')
-    argparser.add_argument('-debug', help='Show debug messages while processing.', action='store_true')
+    argparser.add_argument('--dry', help='Perform the dry run with no changes done to filesystem.', action='store_true')
+    argparser.add_argument('--debug', help='Show debug messages while processing.', action='store_true')
 
     parsed = argparser.parse_args()
     kwargs = {'source_path': parsed.source_path}
@@ -411,4 +417,8 @@ if __name__ == '__main__':
 
         letme.hear(parsed.r)
     except LetMeError as e:
-        print('ERROR: %s' % e.message)
+        logging.error('ERROR: %s' % e)
+
+
+if __name__ == '__main__':
+    main()
