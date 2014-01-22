@@ -34,14 +34,14 @@ Ubuntu users may install the following SoX packages: `sox`, `libsox-fmt-all`.
 Usage
 -----
 
-1. `import letmehear` - if you want to use it as module. *LetMe* class is at your service.
-2. `./letmehear.py -h` in command line - to get help on utility usage.
+1. `from letmehear import letmehear` - if you want to use it as module. *LetMe* class is at your service.
+2. `letmehear -h` in command line - to get help on utility usage.
 
 In the following example we merge all audio files into one, increase its playback speed
 to 1.2, and resplit it into chunks of 3 minutes, putting them into `letmehear` directory
 created inside `/home/idlesign/audiobook_1/`::
 
-    ./letmehear.py -s 1.2 /home/idlesign/audiobook_1/
+    letmehear -s 1.2 /home/idlesign/audiobook_1/
 
 
 Dedication
