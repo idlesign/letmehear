@@ -1,0 +1,40 @@
+letmehear changelog
+===================
+
+
+v0.6.0
+------
++ Added Py3 support.
++ Now installed into /usr/local/bin/ as letmehear
+* Buggy -dry and -debug args renamed into --dry and --debug
+
+
+v0.5.0
+------
+* -dry argument now interpreted as a flag.
+* File ext filtering is now case insensitive.
+* Now rases exception if unable to read file sample rate.
+
+
+v0.4.0
+------
++ Added SoX availability check method.
+
+
+v0.3.0
+------
++ Implemented automatic source resampling.
++ Added backshift length adjustment option.
++ Added ID3Tags removal from resulting files.
+
+
+v0.2.0
+------
++ Intermediate merged file forma changed to .flac.
++ Chopping progress now is more verbose.
++ Audio speed adjustment is implemented.
+
+
+v0.1.0
+------
++ Basic functionality.
