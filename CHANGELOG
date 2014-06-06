@@ -2,6 +2,11 @@ letmehear changelog
 ===================
 
 
+v1.0.0
+------
+No changes, except version bumping up.
+
+
 v0.6.0
 ------
 + Added Py3 support.
