@@ -78,7 +78,7 @@ class LetMe(object):
         if use_logging:
             self._configure_logging(use_logging)
 
-        logging.info('Source path: %s' % self.path_source)
+        logging.info('Source path: %s', self.path_source)
         if not os.path.exists(self.path_source):
             raise LetMeError('Path "%s" is not found.' % self.path_source)
 
@@ -91,7 +91,7 @@ class LetMe(object):
         Returns tuple, where first element is a process return code,
         and the second is a tuple of stdout and stderr output.
         """
-        logging.debug('Executing shell command: %s' % command)
+        logging.debug('Executing shell command: %s', command)
         if (self._dry_run and supress_dry_run) or not self._dry_run:
             prc = Popen(command, shell=True, stdout=stdout)
             std = list(prc.communicate())
@@ -108,7 +108,7 @@ class LetMe(object):
     def _create_target_path(self, path):
         """Creates a directory for target files."""
         if not os.path.exists(path) and not self._dry_run:
-            logging.debug('Creating target path: %s ...' % path)
+            logging.debug('Creating target path: %s ...', path)
             try:
                 os.makedirs(path)
             except OSError:
@@ -126,13 +126,15 @@ class LetMe(object):
         `recursive` - if True search is also performed within subdirectories.
 
         """
-        logging.info('Enumerating files under the source path (recursive=%s) ...' % recursive)
+        logging.info('Enumerating files under the source path (recursive=%s) ...', recursive)
         files = {}
         if not recursive:
-            files[self.path_source] = [file for file in os.listdir(self.path_source) if os.path.isfile(os.path.join(self.path_source, file))]
+            files[self.path_source] = [
+                f for f in os.listdir(self.path_source) if os.path.isfile(os.path.join(self.path_source, f))
+            ]
         else:
             for current_dir, sub_dirs, dir_files in os.walk(self.path_source):
-                files[os.path.join(self.path_source, current_dir)] = [file for file in dir_files]
+                files[os.path.join(self.path_source, current_dir)] = [f for f in dir_files]
 
         return files
 
@@ -150,9 +152,9 @@ class LetMe(object):
         for path in paths:
             if not path.endswith('letmehear'):
                 files = sorted(files_dict[path])
-                for file in files:
-                    if os.path.splitext(file)[1].lstrip('.').lower() in supported_formats:
-                        files_filtered[path].append(file)
+                for f in files:
+                    if os.path.splitext(f)[1].lstrip('.').lower() in supported_formats:
+                        files_filtered[path].append(f)
         return files_filtered
 
     def set_part_length(self, seconds):
@@ -184,7 +186,7 @@ class LetMe(object):
         if matches is not None:
             formats = matches[0].strip().split(' ')
 
-        logging.debug('Sox supported audio formats: %s' % formats)
+        logging.debug('Sox supported audio formats: %s', formats)
         return formats
 
     def sox_get_sample_rates(self, files):
@@ -195,16 +197,16 @@ class LetMe(object):
         min_rate = max_rate = None
         files_to_rates_dict = {}
 
-        for file in files:
-            result = self._process_command('soxi -r "%s"' % file, PIPE)
+        for f in files:
+            result = self._process_command('soxi -r "%s"' % f, PIPE)
             try:
                 rate = int(result[1][0].strip('\n'))
             except ValueError:
-                raise LetMeError('Unable to read sample rate from %s' % file)
+                raise LetMeError('Unable to read sample rate from %s' % f)
 
-            files_to_rates_dict[file] = rate
+            files_to_rates_dict[f] = rate
 
-            logging.debug('\nSample rate `%s` for `%s`' % (rate, file))
+            logging.debug('\nSample rate `%s` for `%s`', rate, f)
 
             if max_rate is None or rate > max_rate:
                 max_rate = rate
@@ -212,7 +214,7 @@ class LetMe(object):
             if min_rate is None or rate < min_rate:
                 min_rate = rate
 
-        logging.debug('Sample rates: min - %s, max - %s' % (min_rate, max_rate))
+        logging.debug('Sample rates: min - %s, max - %s', min_rate, max_rate)
         return min_rate, max_rate, files_to_rates_dict
 
     @staticmethod
@@ -224,11 +226,15 @@ class LetMe(object):
             pass
         return 'tmp_%s.flac' % md5(filepath).hexdigest()
 
-    def sox_resample(self, file, target_rate, target_dir):
-        target_file = os.path.join(target_dir, self.get_resampled_filename(file))
-        logging.info('MUST resample "%s" to create source file. Resampling to %s ...\n      Target: %s' %
-                     (file, target_rate, target_file))
-        command = 'sox -S "%(input)s" -r %(rate)s "%(target)s"' % {'input': file, 'rate': target_rate, 'target': target_file}
+    def sox_resample(self, filepath, target_rate, target_dir):
+        target_file = os.path.join(target_dir, self.get_resampled_filename(filepath))
+        logging.info(
+            'MUST resample "%s" to create source file. Resampling to %s ...\n      Target: %s',
+            filepath, target_rate, target_file
+        )
+        command = 'sox -S "%(input)s" -r %(rate)s "%(target)s"' % {
+            'input': filepath, 'rate': target_rate, 'target': target_file
+        }
         self._process_command(command)
 
     def sox_create_source_file(self, files, target):
@@ -236,8 +242,8 @@ class LetMe(object):
         more input files.
 
         """
-        logging.debug('Source file will be made from:\n%s\n' % '\n'.join(files))
-        logging.info('Making source file: %s' % target)
+        logging.debug('Source file will be made from:\n%s\n', '\n'.join(files))
+        logging.info('Making source file: %s', target)
 
         options = ''
         effects = ''
@@ -247,17 +253,18 @@ class LetMe(object):
             options = '--combine concatenate'
 
         target_dir = os.path.dirname(target)
-        for file in files:
-            resampled_file = os.path.join(target_dir, self.get_resampled_filename(file))
+        for f in files:
+            resampled_file = os.path.join(target_dir, self.get_resampled_filename(f))
             if os.path.exists(resampled_file):
-                file = resampled_file
-            files_to_precess.append(file)
+                f = resampled_file
+            files_to_precess.append(f)
 
         if self._speed is not None:
             effects = 'speed %s' % self._speed
 
         command = 'sox -S --ignore-length %(options)s "%(files)s" "%(target)s" %(effects)s' % {
-            'options': options, 'files': '" "'.join(files_to_precess), 'target': target, 'effects': effects}
+            'options': options, 'files': '" "'.join(files_to_precess), 'target': target, 'effects': effects
+        }
 
         self._process_command(command)
 
@@ -289,12 +296,15 @@ class LetMe(object):
             parts_count = int(round(wav_length / float(part_length - backshift), 0))
         parts_count_len = len(str(parts_count))
 
-        logging.info('Chopping information:\n' \
-                     '      Source file length: %(source)s second(s)\n' \
-                     '      Requested part length: %(part)s second(s)\n' \
-                     '      Backshift: %(back)s second(s)\n' \
-                     '      Parts count: %(parts_cnt)s' %
-             {'source': wav_length, 'part': part_length, 'parts_cnt': parts_count, 'back': backshift})
+        logging.info('Chopping information:\n'
+                     '      Source file length: %(source)s second(s)\n'
+                     '      Requested part length: %(part)s second(s)\n'
+                     '      Backshift: %(back)s second(s)\n'
+                     '      Parts count: %(parts_cnt)s',
+                     source=wav_length,
+                     part=part_length,
+                     parts_cnt=parts_count,
+                     back=backshift)
 
         logging.info('Starting chopping ...')
         for index in range(0, parts_count):
@@ -309,9 +319,20 @@ class LetMe(object):
             comment = '--comment ""'
 
             target = part_number
-            logging.info('Working on %s.mp3 [%s/%s - %s%%] ...' % (target, int(part_number), parts_count, int(int(part_number) * 100 / parts_count)))
+            logging.info(
+                'Working on %s.mp3 [%s/%s - %s%%] ...',
+                target,
+                int(part_number),
+                parts_count,
+                int(int(part_number) * 100 / parts_count)
+            )
             command = 'sox -V1 "%(source)s" %(comment)s %(target)s.mp3 trim %(start_pos)s %(length)s' % {
-                'source': source_filename, 'target': target, 'start_pos': start_pos, 'length': part_length, 'comment': comment}
+                'source': source_filename,
+                'target': target,
+                'start_pos': start_pos,
+                'length': part_length,
+                'comment': comment
+            }
             self._process_command(command, PIPE)
         logging.info('Chopped.\n')
 
@@ -322,9 +343,9 @@ class LetMe(object):
         source_dir = os.path.dirname(source_filename)
         if os.path.exists(source_filename):
             os.remove(source_filename)
-        for file in os.listdir(source_dir):
-            if file.startswith('tmp_'):
-                os.remove(os.path.join(source_dir, file))
+        for f in os.listdir(source_dir):
+            if f.startswith('tmp_'):
+                os.remove(os.path.join(source_dir, f))
 
     def process_source_file(self, path, files, source_filename):
         """Initiates source file processing."""
@@ -332,9 +353,9 @@ class LetMe(object):
 
         min_rate, max_rate, files_to_rates_dict = self.sox_get_sample_rates(files)
         if min_rate != max_rate:
-            for file in files:
-                if files_to_rates_dict[file] != max_rate:
-                    self.sox_resample(file, max_rate, os.path.dirname(source_filename))
+            for f in files:
+                if files_to_rates_dict[f] != max_rate:
+                    self.sox_resample(f, max_rate, os.path.dirname(source_filename))
 
         self.sox_create_source_file(files, source_filename)
         os.chdir(os.path.dirname(source_filename))
@@ -355,7 +376,7 @@ class LetMe(object):
 
         paths = sorted(files_dict.keys())
         for path in paths:
-            logging.info('%s\n      Working on: %s\n' % ('====' * 10, path))
+            logging.info('%s\n      Working on: %s\n', '====' * 10, path)
 
             if self.path_target is None:
                 # When a target path is not specified, create `letmehear` subdirectory
@@ -367,7 +388,7 @@ class LetMe(object):
                 target_path = os.path.join(self.path_target, os.path.split(path)[1])
 
             self._create_target_path(target_path)
-            logging.info('Target (output) path: %s' % target_path)
+            logging.info('Target (output) path: %s', target_path)
 
             source_filename = os.path.join(target_path, self._source_filename)
             self.process_source_file(path, files_dict[path], source_filename)
@@ -379,14 +400,22 @@ def main():
 
     argparser = argparse.ArgumentParser('letmehear.py')
 
-    argparser.add_argument('source_path', help='Absolute or relative (to the current) source path of input audio file(s).')
-    argparser.add_argument('-r', help='Recursion flag to search directories under the source_path.', action='store_true')
-    argparser.add_argument('-d', help='Absolute or relative (to the current) destination path for output audio file(s).')
-    argparser.add_argument('-l', help='Length (in seconds) for each output audio file.', type=int)
-    argparser.add_argument('-b', help='Backshift - number of seconds for every part to be taken from a previous one.', type=int)
-    argparser.add_argument('-s', help='Speed ratio.', type=float)
-    argparser.add_argument('--dry', help='Perform the dry run with no changes done to filesystem.', action='store_true')
-    argparser.add_argument('--debug', help='Show debug messages while processing.', action='store_true')
+    argparser.add_argument(
+        'source_path', help='Absolute or relative (to the current) source path of input audio file(s).')
+    argparser.add_argument(
+        '-r', help='Recursion flag to search directories under the source_path.', action='store_true')
+    argparser.add_argument(
+        '-d', help='Absolute or relative (to the current) destination path for output audio file(s).')
+    argparser.add_argument(
+        '-l', help='Length (in seconds) for each output audio file.', type=int)
+    argparser.add_argument(
+        '-b', help='Backshift - number of seconds for every part to be taken from a previous one.', type=int)
+    argparser.add_argument(
+        '-s', help='Speed ratio.', type=float)
+    argparser.add_argument(
+        '--dry', help='Perform the dry run with no changes done to filesystem.', action='store_true')
+    argparser.add_argument(
+        '--debug', help='Show debug messages while processing.', action='store_true')
 
     parsed = argparser.parse_args()
     kwargs = {'source_path': parsed.source_path}
@@ -401,7 +430,9 @@ def main():
         letme = LetMe(**kwargs)
 
         if not letme.sox_check_is_available():
-            raise LetMeError('SoX seems not available. Please install it (e.g. `sudo apt-get install sox libsox-fmt-all`).')
+            raise LetMeError(
+                'SoX seems not available. Please install it (e.g. `sudo apt-get install sox libsox-fmt-all`).'
+            )
 
         if parsed.l is not None:
             letme.set_part_length(parsed.l)
@@ -417,7 +448,7 @@ def main():
 
         letme.hear(parsed.r)
     except LetMeError as e:
-        logging.error('ERROR: %s' % e)
+        logging.error('ERROR: %s', e)
 
 
 if __name__ == '__main__':

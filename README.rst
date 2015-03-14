@@ -5,6 +5,10 @@ http://github.com/idlesign/letmehear
 .. image:: https://pypip.in/d/letmehear/badge.png
         :target: https://crate.io/packages/letmehear
 
+.. image:: https://landscape.io/github/idlesign/letmehear/master/landscape.svg?style=plastic
+   :target: https://landscape.io/github/idlesign/letmehear/master
+
+
 What's that
 -----------
 
