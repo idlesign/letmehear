@@ -2,11 +2,15 @@ letmehear
 =========
 http://github.com/idlesign/letmehear
 
-.. image:: https://pypip.in/d/letmehear/badge.png
-        :target: https://crate.io/packages/letmehear
 
-.. image:: https://landscape.io/github/idlesign/letmehear/master/landscape.svg?style=plastic
-   :target: https://landscape.io/github/idlesign/letmehear/master
+.. image:: https://img.shields.io/pypi/v/letmehear.svg
+    :target: https://pypi.python.org/pypi/letmehear
+
+.. image:: https://img.shields.io/pypi/dm/letmehear.svg
+    :target: https://pypi.python.org/pypi/letmehear
+
+.. image:: https://img.shields.io/pypi/l/letmehear.svg
+    :target: https://pypi.python.org/pypi/letmehear
 
 
 What's that
